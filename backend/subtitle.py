@@ -1,7 +1,11 @@
+import io
 import os
+
 import google_auth_oauthlib.flow
 import googleapiclient.discovery
 import googleapiclient.errors
+
+from googleapiclient.http import MediaIoBaseDownload
 
 scopes = ["https://www.googleapis.com/auth/youtube.force-ssl"]
 
@@ -15,7 +19,7 @@ def main():
     flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
         client_secrets_file, scopes)
     # credentials = flow.run_console()
-    credentials = flow.run_local_server(port=8080)
+    credentials = flow.run_local_server(port=3000)
     youtube = googleapiclient.discovery.build(
         api_service_name, api_version, credentials=credentials)
 
@@ -25,7 +29,28 @@ def main():
     )
     response = request.execute()
 
-    print(response)
+    # print(response)
+
+    captionID = ""
+    for caption in response.get("items", []):
+        if caption["snippet"]["language"] == "en":
+            captionID = caption["id"]
+            print("\nCaption ID:", captionID)
+
+            print("Language:", caption["snippet"]["language"])
+            print("Last Updated:", caption["snippet"]["lastUpdated"])
+            print()
+
+    request = youtube.captions().download(
+        id="AUieDabtbewAoYf8lCfnfuXcILjAGpv59b7UPZ_y8u4r"
+    )
+
+    fh = io.FileIO("output.txt", "wb")
+
+    download = MediaIoBaseDownload(fh, request)
+    complete = False
+    while not complete:
+        status, complete = download.next_chunk()
 
 
 if __name__ == "__main__":
